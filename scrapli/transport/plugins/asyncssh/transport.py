@@ -17,6 +17,18 @@ from scrapli.exceptions import (
 from scrapli.ssh_config import SSHKnownHosts
 from scrapli.transport.base import AsyncTransport, BasePluginTransportArgs, BaseTransportArgs
 
+PREFERRED_KEY_ALGORITHMS = (
+    "ssh-rsa",
+    "rsa-sha2-512",
+    "rsa-sha2-256",
+    "ecdsa-sha2-1.3.132.0.10",
+    "ecdsa-sha2-nistp256",
+    "ecdsa-sha2-nistp384",
+    "ecdsa-sha2-nistp521",
+    "ssh-ed448",
+    "ssh-ed25519",
+)
+
 
 @dataclass()
 class PluginTransportArgs(BasePluginTransportArgs):
@@ -32,6 +44,31 @@ class AsyncsshTransport(AsyncTransport):
     def __init__(
         self, base_transport_args: BaseTransportArgs, plugin_transport_args: PluginTransportArgs
     ) -> None:
+        """
+        Asyncssh transport plugin.
+
+        This transport supports some additional `transport_options` to control behavior --
+
+        `limit_key_algorithms` is a bool that when set to `True` will limit the key algos that
+            asyncssh sends to the server. this exists because when auth strict key is false asyncssh
+            sends a ton of allowable key algos to the server; in some cases the server closes the
+            connection if this list is too big. when set to `True` this will force asyncssh to send
+            only the key algorithms in the `PREFERRED_KEY_ALGORITHMS` tuple. users can of course
+            override this global variable if they need to send different keys! see also:
+            https://github.com/carlmontanari/scrapli/issues/173
+            https://github.com/ronf/asyncssh/issues/323
+
+        Args:
+            base_transport_args: scrapli base transport plugin arguments
+            plugin_transport_args: system ssh specific transport plugin arguments
+
+        Returns:
+            N/A
+
+        Raises:
+            ScrapliUnsupportedPlatform: if system is windows
+
+        """
         super().__init__(base_transport_args=base_transport_args)
         self.plugin_transport_args = plugin_transport_args
 
@@ -109,6 +146,13 @@ class AsyncsshTransport(AsyncTransport):
             "agent_path": None,
             "config": self.plugin_transport_args.ssh_config_file,
         }
+
+        if (
+            self.plugin_transport_args.auth_strict_key is False
+            and self._base_transport_args.transport_options.get("limit_key_algorithms", False)
+            is True
+        ):
+            common_args["server_host_key_algs"] = PREFERRED_KEY_ALGORITHMS
 
         try:
             self.session = await asyncio.wait_for(
