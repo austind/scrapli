@@ -126,8 +126,9 @@ class SystemTransport(Transport):
             buf = self.session.read(65535)
         except EOFError as exc:
             msg = (
-                "encountered EOF reading from transport; typically means the device closed the "
-                "connection"
+                "Encountered EOF reading from transport; typically means the device closed the "
+                "connection. If proxying through jumphost/bastion, try connecting from that "
+                "host for more info."
             )
             self.logger.critical(msg)
             raise ScrapliConnectionError(msg) from exc

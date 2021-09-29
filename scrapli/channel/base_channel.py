@@ -270,11 +270,6 @@ class BaseChannel:
             msg = "Permissions for private key are too open, authentication failed!"
         elif b"could not resolve hostname" in output.lower():
             msg = "Could not resolve address for host"
-        elif b"connection closed by remote host" in output.lower():
-            msg = (
-                "Unable to connect to host. If proxying through a jumphost "
-                "or bastion server, try again from there for more info."
-            )
         if msg:
             self.logger.critical(msg)
             raise ScrapliAuthenticationFailed(msg)
