@@ -63,10 +63,7 @@ class BaseChannelArgs:
             ScrapliValueError: if invalid channel_log_mode provided
 
         """
-        if self.channel_log_mode.lower() not in (
-            "write",
-            "append",
-        ):
+        if self.channel_log_mode.lower() not in ("write", "append"):
             raise ScrapliValueError(
                 f"provided channel_log_mode '{self.channel_log_mode}' is not valid, mode must be "
                 f"one of: 'write', 'append'"
@@ -80,9 +77,7 @@ class BaseChannelArgs:
 
 class BaseChannel:
     def __init__(
-        self,
-        transport: Union[AsyncTransport, Transport],
-        base_channel_args: BaseChannelArgs,
+        self, transport: Union[AsyncTransport, Transport], base_channel_args: BaseChannelArgs
     ):
         """
         BaseChannel Object -- provides convenience methods to both sync and async Channels
@@ -275,6 +270,11 @@ class BaseChannel:
             msg = "Permissions for private key are too open, authentication failed!"
         elif b"could not resolve hostname" in output.lower():
             msg = "Could not resolve address for host"
+        elif b"connection closed by remote host" in output.lower():
+            msg = (
+                "Unable to connect to host. If proxying through a jumphost "
+                "or bastion server, try again from there for more info."
+            )
         if msg:
             self.logger.critical(msg)
             raise ScrapliAuthenticationFailed(msg)
